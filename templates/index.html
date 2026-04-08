@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Credit Card Fraud Detection</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    header p {
+      margin-top: 8px;
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.78rem;
+      color: #7dd3fc;
+      margin-bottom: 14px;
+    }
+
+    /* ---- Result Banner ---- */
+    .result-banner {
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .result-banner.fraud {
+      background: #2d0a0a;
+      border: 1px solid #ef4444;
+    }
+
+    .result-banner.legit {
+      background: #052e16;
+      border: 1px solid #22c55e;
+    }
+
+    .result-icon {
+      font-size: 2.4rem;
+      flex-shrink: 0;
+    }
+
+    .result-label {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .result-banner.fraud .result-label { color: #f87171; }
+    .result-banner.legit .result-label { color: #4ade80; }
+
+    .result-sub {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    .result-stats {
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .stat-row {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin-top: 4px;
+    }
+
+    .stat-row span {
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    /* Progress bar */
+    .bar-wrap {
+      background: #1e293b;
+      border-radius: 99px;
+      height: 6px;
+      width: 160px;
+      margin-top: 8px;
+      overflow: hidden;
+      margin-left: auto;
+    }
+
+    .bar-fill-fraud { background: #ef4444; height: 100%; border-radius: 99px; }
+    .bar-fill-legit { background: #22c55e; height: 100%; border-radius: 99px; }
+
+    .error-box {
+      background: #2d0a0a;
+      border: 1px solid #ef4444;
+      border-radius: 10px;
+      padding: 16px 20px;
+      color: #f87171;
+      margin-bottom: 28px;
+      font-size: 0.9rem;
+    }
+
+    /* ---- Card ---- */
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #7dd3fc;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #334155;
+    }
+
+    /* ---- Grid ---- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .field input {
+      background: #0f1117;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f1f5f9;
+      font-size: 0.88rem;
+      padding: 9px 12px;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: #7dd3fc;
+    }
+
+    .field input.amount-field {
+      border-color: #6366f1;
+    }
+
+    .field input.amount-field:focus {
+      border-color: #a5b4fc;
+    }
+
+    /* ---- Buttons ---- */
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+
+    .btn-predict {
+      background: linear-gradient(135deg, #6366f1, #7dd3fc);
+      color: #0f1117;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 12px 32px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .btn-predict:hover { opacity: 0.88; }
+
+    .btn-reset {
+      background: transparent;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      padding: 12px 24px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-reset:hover {
+      border-color: #94a3b8;
+      color: #e2e8f0;
+    }
+
+    /* ---- Sample data button ---- */
+    .sample-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn-sample {
+      background: #0f1117;
+      border: 1px solid #334155;
+      color: #7dd3fc;
+      font-size: 0.82rem;
+      padding: 7px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-sample:hover {
+      border-color: #7dd3fc;
+      background: #1a2744;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #475569;
+      font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="badge">🔒 ML-Powered Detection</div>
+    <h1>Credit Card Fraud Detection</h1>
+    <p>Enter transaction features below to classify it as Legitimate or Fraudulent</p>
+  </header>
+
+  <!-- Result Banner -->
+  {% if result %}
+    {% if result.error is defined %}
+      <div class="error-box">⚠️ Error: {{ result.error }}</div>
+    {% else %}
+      <div class="result-banner {{ 'fraud' if result.is_fraud else 'legit' }}">
+        <div class="result-icon">{{ '🚨' if result.is_fraud else '✅' }}</div>
+        <div>
+          <div class="result-label">{{ result.label }}</div>
+          <div class="result-sub">
+            {{ 'This transaction has been flagged as potentially fraudulent.' if result.is_fraud else 'This transaction appears to be legitimate.' }}
+          </div>
+        </div>
+        <div class="result-stats">
+          <div class="stat-row">Confidence: <span>{{ result.confidence }}%</span></div>
+          <div class="bar-wrap">
+            <div class="{{ 'bar-fill-fraud' if result.is_fraud else 'bar-fill-legit' }}"
+                 style="width: {{ result.confidence }}%"></div>
+          </div>
+          <div class="stat-row" style="margin-top:10px">Fraud Prob: <span>{{ result.fraud_prob }}%</span></div>
+          <div class="stat-row">Legit Prob: <span>{{ result.legit_prob }}%</span></div>
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+
+  <!-- Form -->
+  <form method="POST" action="/predict" id="fraudForm">
+
+    <!-- Sample Data Buttons -->
+    <div class="card">
+      <h2>⚡ Quick Fill</h2>
+      <div class="sample-bar">
+        <button type="button" class="btn-sample" onclick="fillSample('legit')">Fill Sample — Legitimate</button>
+        <button type="button" class="btn-sample" onclick="fillSample('fraud')">Fill Sample — Fraudulent</button>
+        <button type="button" class="btn-sample" onclick="fillRandom()">Fill Random Values</button>
+      </div>
+      <p style="color:#475569; font-size:0.8rem;">Use these to test the model quickly without manually entering all 29 fields.</p>
+    </div>
+
+    <!-- V1 - V14 -->
+    <div class="card">
+      <h2>📊 PCA Features — V1 to V14</h2>
+      <div class="grid">
+        {% for feat in features[:14] %}
+        <div class="field">
+          <label>{{ feat }}</label>
+          <input type="number" step="any" name="{{ feat }}"
+                 value="{{ form_values[feat] if form_values and feat in form_values else '' }}"
+                 placeholder="0.0" required />
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- V15 - V28 -->
+    <div class="card">
+      <h2>📊 PCA Features — V15 to V28</h2>
+      <div class="grid">
+        {% for feat in features[14:28] %}
+        <div class="field">
+          <label>{{ feat }}</label>
+          <input type="number" step="any" name="{{ feat }}"
+                 value="{{ form_values[feat] if form_values and feat in form_values else '' }}"
+                 placeholder="0.0" required />
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Amount -->
+    <div class="card">
+      <h2>💳 Transaction Amount</h2>
+      <div class="grid" style="max-width: 300px;">
+        <div class="field">
+          <label>Amount (USD)</label>
+          <input type="number" step="any" name="Amount" class="amount-field"
+                 value="{{ form_values['Amount'] if form_values and 'Amount' in form_values else '' }}"
+                 placeholder="e.g. 149.62" required />
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn-predict">🔍 Analyze Transaction</button>
+      <button type="button" class="btn-reset" onclick="resetForm()">↺ Reset</button>
+    </div>
+
+  </form>
+
+  <footer>
+    Built by Azhar Mahmood &nbsp;·&nbsp; Logistic Regression Model &nbsp;·&nbsp; Accuracy: 93.40%
+  </footer>
+</div>
+
+<script>
+  // Known legitimate-looking sample (avg values close to 0 for V features)
+  const legitSample = {
+    V1: -1.3598, V2: -0.0728, V3: 2.5363, V4: 1.3782, V5: -0.3383,
+    V6: 0.4624, V7: 0.2396, V8: 0.0987, V9: 0.3638, V10: 0.0908,
+    V11: -0.5516, V12: -0.6178, V13: -0.9914, V14: -0.3112,
+    V15: 1.4682, V16: -0.4704, V17: 0.2080, V18: 0.0258,
+    V19: 0.4040, V20: 0.2514, V21: -0.0183, V22: 0.2778,
+    V23: -0.1105, V24: 0.0669, V25: 0.1285, V26: -0.1891,
+    V27: 0.1336, V28: -0.0211, Amount: 149.62
+  };
+
+  // Known fraud-like sample (unusual V feature values)
+  const fraudSample = {
+    V1: -3.0435, V2: -3.1572, V3: 1.0886, V4: 2.2886, V5: 1.3597,
+    V6: -1.0640, V7: -3.5479, V8: 1.7171, V9: -0.4514, V10: -2.0900,
+    V11: 3.9479, V12: -5.1917, V13: -0.4306, V14: -8.2554,
+    V15: -0.2257, V16: 1.2597, V17: -6.7434, V18: 0.3940,
+    V19: 0.1052, V20: 0.6482, V21: 0.7025, V22: -0.1253,
+    V23: 0.3638, V24: 0.1090, V25: -0.0671, V26: 0.1351,
+    V27: 0.4640, V28: 0.1782, Amount: 1.00
+  };
+
+  function fillSample(type) {
+    const sample = type === 'legit' ? legitSample : fraudSample;
+    for (const [key, val] of Object.entries(sample)) {
+      const el = document.querySelector(`input[name="${key}"]`);
+      if (el) el.value = val;
+    }
+  }
+
+  function fillRandom() {
+    const fields = document.querySelectorAll('input[type="number"]');
+    fields.forEach(f => {
+      if (f.name === 'Amount') {
+        f.value = (Math.random() * 500).toFixed(2);
+      } else {
+        f.value = ((Math.random() - 0.5) * 4).toFixed(4);
+      }
+    });
+  }
+
+  function resetForm() {
+    document.getElementById('fraudForm').reset();
+  }
+</script>
+</body>
+</html>
